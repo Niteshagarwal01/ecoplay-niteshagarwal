@@ -10,7 +10,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
+## Live Demo: [ecoplaydeploy.vercel.app](https://ecoplaydeploy.vercel.app/)
 
+---
 ## Table of Contents
 
 - [Overview](#overview)
