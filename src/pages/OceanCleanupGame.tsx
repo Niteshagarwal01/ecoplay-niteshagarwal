@@ -41,6 +41,8 @@ const OceanCleanupGame = () => {
   const [totalCollected, setTotalCollected] = useState(0);
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: 0, y: 0 });
+  // Guard: ensures final score is committed to GameContext exactly once per round.
+  const hasCommittedScoreRef = useRef(false);
 
   const trashTypes = {
     bottle: { points: 10, color: 'bg-blue-400', emoji: '🍶' },
@@ -102,6 +104,8 @@ const OceanCleanupGame = () => {
     setTimeLeft(30); // CHANGED: 30 seconds
     setCombo(0);
     setTotalCollected(0);
+    // Reset guard so the new round can award points at game end.
+    hasCommittedScoreRef.current = false;
     generateInitialTrash();
     generateFish();
   };
@@ -118,14 +122,13 @@ const OceanCleanupGame = () => {
       setTrash(prev => [...prev, generateSingleTrash()]);
 
       const points = trashItem.points * (1 + combo * 0.1);
+      // Update local round score only — global points are committed once at game end.
       setScore(prev => prev + Math.round(points));
       setCombo(prev => prev + 1);
       setTotalCollected(prev => prev + 1);
       setShowCombo(true);
       
       setTimeout(() => setShowCombo(false), 1000);
-      
-      dispatch({ type: 'ADD_POINTS', payload: Math.round(points) });
     }
   };
 
@@ -192,11 +195,16 @@ const OceanCleanupGame = () => {
 
   const endGame = useCallback(() => {
     setGameActive(false);
-    
+
+    // Commit final round score to GameContext exactly once per round.
+    if (score > 0 && !hasCommittedScoreRef.current) {
+      hasCommittedScoreRef.current = true;
+      dispatch({ type: 'ADD_POINTS', payload: score });
+    }
+
     dispatch({
       type: 'UPDATE_OCEAN_STATS',
       payload: {
-        oceanCleanupScore: (state.gameStats?.oceanCleanupScore || 0) + score,
         totalTrashCollected: (state.gameStats?.totalTrashCollected || 0) + totalCollected,
         perfectCleanups: state.gameStats?.perfectCleanups || 0
       }
